@@ -2046,6 +2046,7 @@ int main(int argc, char** argv) {
     const auto status = vk.initialize();
     if (status == vktest::DeviceStatus::unavailable) return 77;
     if (status != vktest::DeviceStatus::ready) return 1;
+    if (bc_only && !vk.bindless) return 77;
     int failures = 0;
     {
         Ref<ID3D12Device> ours;
