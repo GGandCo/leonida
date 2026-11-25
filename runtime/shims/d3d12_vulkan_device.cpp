@@ -1922,6 +1922,7 @@ struct DeviceState {
     std::mutex title_image_mutex;
     std::multimap<std::uint64_t, Resource*> title_images;
     VulkanDeviceInfo info;
+    PFN_vkSetDebugUtilsObjectNameEXT set_debug_name = nullptr;
     std::vector<std::uint32_t> families;
 
     template<typename CreateInfo>
@@ -9146,6 +9147,13 @@ private:
             const leonida::aftermath::ShaderName named(entry->name);
             if (vk.vkCreateShaderModule(dev, &module_info, nullptr, &module) != VK_SUCCESS) return VK_NULL_HANDLE;
         }
+        if (device_.set_debug_name) {
+            VkDebugUtilsObjectNameInfoEXT name{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+            name.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
+            name.objectHandle = reinterpret_cast<std::uint64_t>(module);
+            name.pObjectName = entry->name.c_str();
+            device_.set_debug_name(dev, &name);
+        }
         const auto bytes = module_info.codeSize;
         std::vector<std::uint32_t>().swap(words);  // vkCreateShaderModule consumed pCode
         VkComputePipelineCreateInfo pipeline_info{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
@@ -11191,6 +11199,7 @@ public:
                 f = reinterpret_cast<std::remove_reference_t<decltype(f)>>(info.get_instance_proc(info.instance, name));
             };
             load(labels.cmd_insert, "vkCmdInsertDebugUtilsLabelEXT");
+            load(state_.set_debug_name, "vkSetDebugUtilsObjectNameEXT");
             load(labels.cmd_begin, "vkCmdBeginDebugUtilsLabelEXT");
             load(labels.cmd_end, "vkCmdEndDebugUtilsLabelEXT");
             load(labels.queue_insert, "vkQueueInsertDebugUtilsLabelEXT");
